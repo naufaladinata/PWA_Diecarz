@@ -1,7 +1,6 @@
 # DieCarz
 
-Progressive Web App katalog koleksi diecast (Hot Wheels, MINI GT, Tomica, Majorette, Matchbox, Inno64, dll.). Tugas Akhir Praktikum PPB.
-
+Progressive Web App katalog koleksi diecast (Hot Wheels, MINI GT, Tomica, Majorette, Matchbox, Inno64, dll.). 
 
 ## Fitur
 Katalog (cari, filter brand/skala/rarity, urutkan), Favorit (server-first + fallback localStorage), Detail dengan spesifikasi dan ulasan, CRUD diecast dengan upload gambar, Profil kolektor, Tentang, mode offline (data lokal), instalasi PWA.
