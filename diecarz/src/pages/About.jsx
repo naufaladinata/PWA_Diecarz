@@ -2,8 +2,8 @@ import { Github, Mail } from 'lucide-react';
 
 // [ISI] Ganti data berikut dengan data Anda
 const INFO = {
-  author: '[ISI NAMA LENGKAP]', nim: '[ISI NIM]',
-  github: 'https://github.com/[username]/diecarz', email: '[email@contoh.com]',
+  author: 'Muhammad Naufal Adinata', nim: '21120124130065',
+  github: 'https://github.com/naufaladinata/diecarz', email: '[naufal9495@gmail.com]',
 };
 
 export default function About() {
