@@ -1,5 +1,7 @@
 import express from 'express';
 import multer from 'multer';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { db } from './db.js';
 
 const app = express();
@@ -22,7 +24,57 @@ const COLS = ['name', 'brand', 'scale', 'series', 'release_year', 'color', 'rari
 const values = (b) => COLS.map((c) => (c === 'specs' ? JSON.stringify(b.specs || []) : b[c] ?? null));
 const valid = (b) => b.name && b.name.trim().length >= 3;
 
+// ---------- Autentikasi (JWT) ----------
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
+const signToken = (u) => {
+  if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET belum diatur di environment');
+  return jwt.sign({ sub: u.id, username: u.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
+};
+// Middleware: wajib login. Mengisi req.user = { id, username }
+const auth = (req, res, next) => {
+  const h = req.headers.authorization || '';
+  const token = h.startsWith('Bearer ') ? h.slice(7) : '';
+  if (!token) return fail(res, 401, 'Silakan login terlebih dahulu');
+  try {
+    const p = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = { id: p.sub, username: p.username };
+    next();
+  } catch {
+    fail(res, 401, 'Sesi berakhir, silakan login kembali');
+  }
+};
+
 app.get('/api/v1/health', (_req, res) => ok(res, { name: 'DieCarz API', version: '1.0.0' }));
+
+app.post('/api/v1/auth/register', wrap(async (req, res) => {
+  const username = String(req.body.username || '').trim();
+  const password = String(req.body.password || '');
+  if (!USERNAME_RE.test(username)) return fail(res, 400, 'Username 3-20 karakter: huruf, angka, atau underscore');
+  if (password.length < 6 || password.length > 72) return fail(res, 400, 'Password 6-72 karakter');
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    const r = await db.query('INSERT INTO users (username, password_hash) VALUES ($1,$2) RETURNING id, username', [username, hash]);
+    res.status(201).json({ success: true, data: { user: r.rows[0], token: signToken(r.rows[0]) }, message: 'Akun dibuat' });
+  } catch (e) {
+    if (e.code === '23505') return fail(res, 409, 'Username sudah dipakai');
+    throw e;
+  }
+}));
+
+app.post('/api/v1/auth/login', wrap(async (req, res) => {
+  const username = String(req.body.username || '').trim();
+  const password = String(req.body.password || '');
+  const r = await db.query('SELECT id, username, password_hash FROM users WHERE lower(username) = lower($1)', [username]);
+  const u = r.rows[0];
+  // Pesan sengaja sama untuk username/password salah agar akun tidak bisa ditebak
+  if (!u || !(await bcrypt.compare(password, u.password_hash))) return fail(res, 401, 'Username atau password salah');
+  ok(res, { user: { id: u.id, username: u.username }, token: signToken(u) });
+}));
+
+app.get('/api/v1/auth/me', auth, wrap(async (req, res) => {
+  const r = await db.query('SELECT id, username FROM users WHERE id = $1', [req.user.id]);
+  r.rows[0] ? ok(res, r.rows[0]) : fail(res, 401, 'Akun tidak ditemukan');
+}));
 
 app.get('/api/v1/diecasts', wrap(async (req, res) => {
   const { search = '', brand, scale, rarity, sort_by = 'name', order = 'asc' } = req.query;
@@ -68,17 +120,24 @@ app.delete('/api/v1/diecasts/:id', wrap(async (req, res) => {
 }));
 
 app.get('/api/v1/diecasts/:id/reviews', wrap(async (req, res) => {
-  ok(res, (await db.query('SELECT * FROM reviews WHERE diecast_id = $1 ORDER BY created_at DESC', [req.params.id])).rows);
+  ok(res, (await db.query(
+    `SELECT r.id, r.diecast_id, r.rating, r.comment, r.created_at, r.user_id, u.username
+       FROM reviews r LEFT JOIN users u ON u.id = r.user_id
+      WHERE r.diecast_id = $1 ORDER BY r.created_at DESC`, [req.params.id])).rows);
 }));
 
-app.post('/api/v1/diecasts/:id/reviews', wrap(async (req, res) => {
-  const { user_identifier, rating, comment = '' } = req.body;
-  if (!user_identifier) return fail(res, 400, 'user_identifier wajib diisi');
+app.post('/api/v1/diecasts/:id/reviews', auth, wrap(async (req, res) => {
+  const { rating, comment = '' } = req.body;
   if (!(Number(rating) >= 1 && Number(rating) <= 5)) return fail(res, 400, 'Rating harus 1-5');
-  const r = await db.query(
-    'INSERT INTO reviews (diecast_id, user_identifier, rating, comment) VALUES ($1,$2,$3,$4) RETURNING *',
-    [req.params.id, user_identifier, Number(rating), String(comment).slice(0, 500)]);
-  res.status(201).json({ success: true, data: r.rows[0], message: 'Ulasan dikirim' });
+  try {
+    const r = await db.query(
+      'INSERT INTO reviews (diecast_id, user_id, user_identifier, rating, comment) VALUES ($1,$2,$3,$4,$5) RETURNING id, diecast_id, rating, comment, created_at, user_id',
+      [req.params.id, req.user.id, String(req.user.id), Number(rating), String(comment).slice(0, 500)]);
+    res.status(201).json({ success: true, data: { ...r.rows[0], username: req.user.username }, message: 'Ulasan dikirim' });
+  } catch (e) {
+    if (e.code === '23503') return fail(res, 404, 'Data tidak ditemukan');
+    throw e;
+  }
 }));
 
 app.get('/api/v1/favorites', wrap(async (req, res) => {

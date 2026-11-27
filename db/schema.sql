@@ -31,3 +31,15 @@ CREATE TABLE IF NOT EXISTS images (
   data BYTEA NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Baru: akun pengguna (login) dan ulasan yang terhubung ke akun
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  username TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+-- Username unik tanpa membedakan huruf besar/kecil (Budi = budi)
+CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx ON users (lower(username));
+-- Ulasan lama (user_id kosong) tetap aman dan tampil sebagai "Anonim"
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE SET NULL;

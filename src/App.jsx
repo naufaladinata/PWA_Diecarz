@@ -8,6 +8,7 @@ import CreateDiecastPage from './pages/CreateDiecastPage';
 import EditDiecastPage from './pages/EditDiecastPage';
 import ProfilePage from './pages/ProfilePage';
 import About from './pages/About';
+import AuthPage from './pages/AuthPage';
 import DiecastDetail from './components/diecast/DiecastDetail';
 
 // Navigasi berbasis state: route = { name, id, from }
@@ -17,7 +18,7 @@ export default function App() {
   const go = (name, id, from) => { setRoute({ name, id, from }); window.scrollTo(0, 0); };
   const refreshAndHome = () => { setRefreshKey((k) => k + 1); go('catalog'); };
 
-  const tab = route.name === 'detail' ? route.from || 'catalog' : route.name === 'edit' ? 'catalog' : route.name;
+  const tab = route.name === 'detail' ? route.from || 'catalog' : route.name === 'edit' ? 'catalog' : route.name === 'auth' ? 'profile' : route.name;
   const hideNav = route.name === 'create' || route.name === 'edit';
 
   return (
@@ -31,11 +32,17 @@ export default function App() {
         </div>
         {route.name === 'favorites' && <FavoritesPage onOpen={(id) => go('detail', id, 'favorites')} />}
         {route.name === 'detail' && (
-          <DiecastDetail id={route.id} onBack={() => go(route.from || 'catalog')} onEdit={(id) => go('edit', id)} onDeleted={refreshAndHome} />
+          <DiecastDetail id={route.id} onLogin={() => go('auth', route.id, route.from || 'catalog')} onBack={() => go(route.from || 'catalog')} onEdit={(id) => go('edit', id)} onDeleted={refreshAndHome} />
         )}
         {route.name === 'create' && <CreateDiecastPage onDone={refreshAndHome} onCancel={() => go('catalog')} />}
         {route.name === 'edit' && <EditDiecastPage id={route.id} onDone={refreshAndHome} onCancel={() => go('detail', route.id, 'catalog')} />}
-        {route.name === 'profile' && <ProfilePage />}
+        {route.name === 'profile' && <ProfilePage onLogin={() => go('auth')} />}
+        {route.name === 'auth' && (
+          <AuthPage
+            onDone={() => (route.id ? go('detail', route.id, route.from) : go('profile'))}
+            onCancel={() => (route.id ? go('detail', route.id, route.from) : go('profile'))}
+          />
+        )}
         {route.name === 'about' && <About />}
       </main>
       {!hideNav && <BottomNav active={tab} onChange={(t) => go(t)} />}

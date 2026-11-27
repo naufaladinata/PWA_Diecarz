@@ -42,7 +42,7 @@ export default defineConfig({
             },
           },
           { // GET API: NetworkFirst dengan timeout
-            urlPattern: ({ url, request }) => request.method === 'GET' && url.pathname.includes('/api/v1/'),
+            urlPattern: ({ url, request }) => request.method === 'GET' && url.pathname.includes('/api/v1/') && !url.pathname.includes('/auth/'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'diecarz-api',

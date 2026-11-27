@@ -87,3 +87,12 @@ input[type="checkbox"] { width: auto; } textarea { resize: vertical; }
 .modal-back { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 60; display: grid; place-items: center; padding: 1rem; }
 .modal { background: #fff; border-radius: 16px; padding: 1.2rem; width: 100%; max-width: 360px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Akun & autentikasi */
+.account { display: flex; justify-content: space-between; align-items: center; gap: .8rem; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: .8rem 1rem; margin: .6rem 0 .2rem; }
+.account > div { display: flex; flex-direction: column; min-width: 0; } .account b { overflow-wrap: anywhere; }
+.login-prompt { display: flex; justify-content: space-between; align-items: center; gap: .8rem; background: #fff; border: 1px dashed var(--line); border-radius: 12px; padding: .8rem 1rem; }
+.login-prompt p { margin: 0; font-size: .9rem; }
+.review-head { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .15rem; }
+.review-head .small { margin-left: auto; word-break: normal; }
+.form input:disabled { background: #f0eee9; color: var(--steel); }

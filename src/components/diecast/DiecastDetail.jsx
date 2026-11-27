@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Pencil, Trash2, Star } from 'lucide-react';
 import { useDiecastById } from '../../hooks/useDiecasts';
 import { useReviews, useCreateReview } from '../../hooks/useReviews';
+import { useAuth } from '../../hooks/useAuth';
 import diecastService from '../../services/diecastService';
 import FavoriteButton from '../common/FavoriteButton';
 import ConfirmModal from '../modals/ConfirmModal';
@@ -19,7 +20,8 @@ function Stars({ value, onPick }) {
   );
 }
 
-export default function DiecastDetail({ id, onBack, onEdit, onDeleted }) {
+export default function DiecastDetail({ id, onBack, onEdit, onDeleted, onLogin }) {
+  const { user } = useAuth();
   const { data: d, loading, error, refetch } = useDiecastById(id);
   const reviews = useReviews(id);
   const { submit, loading: sending, error: sendErr } = useCreateReview();
@@ -83,15 +85,33 @@ export default function DiecastDetail({ id, onBack, onEdit, onDeleted }) {
 
       <h3>Ulasan</h3>
       {isLocal ? <p className="muted">Ulasan tidak tersedia untuk data lokal.</p> : (<>
-        <form onSubmit={sendReview} className="review-form">
-          <Stars value={rating} onPick={setRating} />
-          <textarea maxLength={500} rows={3} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Tulis ulasan (maks. 500 karakter)" aria-label="Komentar ulasan" />
-          <div className="row-between"><small className="muted">{comment.length}/500</small><button className="btn" disabled={sending}>{sending ? 'Mengirim...' : 'Kirim ulasan'}</button></div>
-          {(msg || sendErr) && <p className="error">{msg || sendErr.message}</p>}
-        </form>
+        {user ? (
+          <form onSubmit={sendReview} className="review-form">
+            <p className="muted">Mengulas sebagai <b>@{user.username}</b></p>
+            <Stars value={rating} onPick={setRating} />
+            <textarea maxLength={500} rows={3} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Tulis ulasan (maks. 500 karakter)" aria-label="Komentar ulasan" />
+            <div className="row-between"><small className="muted">{comment.length}/500</small><button className="btn" disabled={sending}>{sending ? 'Mengirim...' : 'Kirim ulasan'}</button></div>
+            {(msg || sendErr) && <p className="error">{msg || sendErr.message}</p>}
+          </form>
+        ) : (
+          <div className="login-prompt">
+            <p>Masuk untuk memberi rating dan ulasan.</p>
+            <button className="btn btn-sm" onClick={onLogin}>Masuk / Daftar</button>
+          </div>
+        )}
         {reviews.loading && <p className="muted">Memuat ulasan...</p>}
         {reviews.error && <p className="error">{reviews.error.message} <button className="link" onClick={reviews.refetch}>Coba lagi</button></p>}
-        {list.map((r, i) => (<div className="review" key={r.id || i}><Stars value={r.rating} /><p>{r.comment}</p></div>))}
+        {list.map((r, i) => (
+          <div className="review" key={r.id || i}>
+            <div className="review-head">
+              <b className={r.username ? '' : 'muted'}>{r.username ? `@${r.username}` : 'Anonim'}</b>
+              {user && r.username === user.username && <span className="chip">Anda</span>}
+              {r.created_at && <span className="muted small">{new Date(r.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+            </div>
+            <Stars value={r.rating} />
+            {r.comment && <p>{r.comment}</p>}
+          </div>
+        ))}
       </>)}
 
       {!isLocal && (
