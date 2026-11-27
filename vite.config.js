@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  server: { proxy: { '/api': 'http://localhost:3000' } },
   plugins: [
     react(),
     tailwindcss(),
@@ -29,6 +30,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
         navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           { // Gambar: CacheFirst
             urlPattern: ({ request }) => request.destination === 'image',

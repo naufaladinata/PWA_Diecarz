@@ -28,7 +28,7 @@ export default function DiecastForm({ title, initial, useDraft, onSubmit, onCanc
   const pick = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const err = validateImage(file, 5);
+    const err = validateImage(file, 4);
     setErrors((x) => ({ ...x, image: err }));
     if (err) return;
     setFile(file);
@@ -80,7 +80,7 @@ export default function DiecastForm({ title, initial, useDraft, onSubmit, onCanc
       <div className="two">{field('Tahun rilis', 'release_year', { type: 'number', inputMode: 'numeric' })}{field('Warna', 'color')}</div>
       {field('Harga (Rp)', 'price', { type: 'number', inputMode: 'numeric', min: 0 })}
       <label>Deskripsi<textarea rows={3} value={f.description} onChange={set('description')} /></label>
-      <label>Gambar (JPG/PNG/WebP, maks. 5 MB)
+      <label>Gambar (JPG/PNG/WebP, maks. 4 MB)
         <input type="file" accept="image/jpeg,image/png,image/webp" onChange={pick} />
         {errors.image && <span className="error">{errors.image}</span>}
       </label>
